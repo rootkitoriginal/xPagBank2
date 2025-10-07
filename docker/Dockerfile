@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxfixes3 \
     libxrandr2 \
+    vim \
     libgbm1 \
     libpango-1.0-0 \
     libcairo2 \
