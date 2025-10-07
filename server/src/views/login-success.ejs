@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PagBank - Container Iniciado</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .message {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .info-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-value {
+            color: #212529;
+            font-family: 'Courier New', monospace;
+        }
+        .links-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .link-button {
+            display: block;
+            padding: 15px 20px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .link-app {
+            background: #28a745;
+            color: white;
+        }
+        .link-app:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        .link-vnc {
+            background: #007bff;
+            color: white;
+        }
+        .link-vnc:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status-icon"><%= reused ? '♻️' : '🚀' %></div>
+            <h1><%= message %></h1>
+            <p class="message">Usuário: <strong><%= username %></strong></p>
+        </div>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label">Container:</span>
+                <span class="info-value"><%= containerName %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Porta App:</span>
+                <span class="info-value"><%= ports.app %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Porta VNC:</span>
+                <span class="info-value"><%= ports.vnc %></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Iniciado em:</span>
+                <span class="info-value"><%= startedAt %></span>
+            </div>
+        </div>
+
+        <div class="links-section">
+            <a href="http://localhost:<%= ports.app %>" class="link-button link-app" target="_blank">
+                📱 Abrir Aplicação
+            </a>
+            <a href="http://localhost:<%= ports.vnc %>" class="link-button link-vnc" target="_blank">
+                🖥️ Abrir noVNC
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Para desligar o container, faça logout em:</p>
+            <code>/pagbank/api/v1/logout?username=<%= username %></code>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 FROM node:18-slim
 
-# Install system dependencies
+# Install system dependencies including Playwright requirements
 RUN apt-get update && apt-get install -y \
     xvfb \
     x11vnc \
@@ -11,6 +11,27 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     procps \
+    # Playwright/Chromium dependencies
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 # Install noVNC
@@ -22,8 +43,14 @@ RUN mkdir -p /usr/local/novnc && \
 
 # Set up work directory for the Node.js application
 WORKDIR /app
+
+# Copy container application package files
 COPY container/package*.json ./
 RUN npm install
+
+# Install Playwright with Chromium
+RUN npm install -D @playwright/test playwright
+RUN npx playwright install chromium --with-deps
 
 # Copy the Node.js application
 COPY container .
@@ -33,7 +60,8 @@ ENV DISPLAY=:0 \
     RESOLUTION=1280x720x24 \
     VNC_PORT=5900 \
     NOVNC_PORT=6080 \
-    APP_PORT=3000
+    APP_PORT=3000 \
+    NODE_ENV=production
 
 # Copy configuration files
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -48,24 +76,3 @@ EXPOSE $APP_PORT $NOVNC_PORT $VNC_PORT
 
 # Set entrypoint
 ENTRYPOINT ["/config/run.sh"]
-
-WORKDIR /app
-
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install --production
-
-# Copy application files
-COPY . .
-
-# Set permissions
-RUN chmod +x entrypoint.sh
-
-# Set environment variables
-ENV NODE_ENV=production \
-    HOST=0.0.0.0 \
-    PORT=8000
-
-EXPOSE 8000
-
-CMD ["./entrypoint.sh"]
