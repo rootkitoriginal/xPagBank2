@@ -122,15 +122,6 @@ app.get('/', async (req, res) => {
         console.log('Aguardando validação do reCAPTCHA e carregamento da tela de senha...');
         await page.waitForTimeout(5000);
         
-        // Verificar se chegou na tela de senha
-        try {
-            await page.waitForSelector('input[name="password-0"]', { timeout: 3000 });
-            console.log('Tela de senha carregada!');
-        } catch (error) {
-            console.log('Ainda aguardando tela de senha... pode ser reCAPTCHA');
-            await page.waitForTimeout(1000);
-        }
-
         // Digitar a senha (041068) - SENHA CORRETA
         console.log('Digitando senha...');
         const senha = '041068';
@@ -153,8 +144,6 @@ app.get('/', async (req, res) => {
         }
         
         console.log('Senha preenchida com sucesso!');
-        await page.waitForTimeout(2000);
-
         // Clicar no botão Entrar
         console.log('Clicando no botão "Entrar"...');
         try {
@@ -162,28 +151,40 @@ app.get('/', async (req, res) => {
             await btnEntrar.click({ force: true });
             console.log('Botão "Entrar" clicado!');
             
-            // Aguardar redirecionamento, QR Code ou erro
-            await page.waitForTimeout(5000);
-            
-            // Verificar se chegou na tela de QR Code
-            const currentUrl = page.url();
-            console.log('URL atual:', currentUrl);
-            
-            // Tentar capturar título da página
-            const pageTitle = await page.title();
-            console.log('Título da página:', pageTitle);
-            
-            // Verificar se há mensagem de erro
-            const hasError = await page.locator('text=/senha inválida|senha incorreta|erro/i').count();
-            if (hasError > 0) {
-                console.log('⚠️ Detectada mensagem de erro de senha');
-            }
-            
             console.log('Login processado!');
+
+            // Aguardar até 10 segundos para verificar se aparece "Validação de Segurança"
+            console.log('Verificando resultado do login por até 10 segundos...');
+
+            let found = false;
+            const startTime = Date.now();
+            const maxWaitTime = 10000; // 10 segundos
+
+            while (Date.now() - startTime < maxWaitTime && !found) {
+                try {
+                    // Procurar pelo texto "Validação de Segurança" na página
+                    const validacaoElement = await page.locator('text="Validação de Segurança"').first();
+                    if (await validacaoElement.isVisible({ timeout: 1000 })) {
+                        console.log('LOGADO');
+                        found = true;
+                        break;
+                    }
+                } catch (e) {
+                }
+                await page.waitForTimeout(500);
+            }
+
+            if (!found) {
+                console.log('Texto "Validação de Segurança" não encontrado após 10 segundos. Fechando navegador...');
+                await browser.close();
+                console.log('Navegador fechado.');
+            }
+
         } catch (error) {
             console.error('Erro ao clicar em Entrar:', error.message);
         }
 
+        await page.waitForTimeout(1000);
         res.json({
             success: true,
             message: 'PagBank login completo!',
@@ -197,9 +198,7 @@ app.get('/', async (req, res) => {
                 'Clicou em "Entrar"',
                 'Processo de login finalizado'
             ],
-            info: 'O navegador está rodando no display :0. Acesse via noVNC para visualizar o resultado.',
-            url: await page.url().catch(() => 'N/A'),
-            title: await page.title().catch(() => 'N/A')
+            info: 'O navegador está rodando no display :0. Acesse via noVNC para visualizar o resultado.'
         });
 
         // Nota: Não fechamos o navegador para que o usuário possa interagir via noVNC
