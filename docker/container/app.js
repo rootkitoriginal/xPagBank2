@@ -51,6 +51,9 @@ app.get('/', async (req, res) => {
         await context.clearCookies();
         await context.clearPermissions();
         
+        const usuario = '15053434000127';
+        const senha = '041068';
+
         console.log('Contexto criado com sucesso! Abrindo nova página...');
         const page = await context.newPage();
         
@@ -108,7 +111,7 @@ app.get('/', async (req, res) => {
         
         // Usar o mesmo método que funciona no MCP Playwright
         const cpfInput = page.getByRole('textbox', { name: 'CPF, CNPJ ou E-mail' });
-        await cpfInput.fill('15053434000127');
+        await cpfInput.fill(usuario);
         console.log('CPF preenchido!');
 
         // Aguardar e clicar no botão Continuar
@@ -124,7 +127,6 @@ app.get('/', async (req, res) => {
         
         // Digitar a senha (041068) - SENHA CORRETA
         console.log('Digitando senha...');
-        const senha = '041068';
         
         for (let i = 0; i < senha.length; i++) {
             const campoNumero = i + 1;
@@ -167,6 +169,34 @@ app.get('/', async (req, res) => {
                     if (await validacaoElement.isVisible({ timeout: 1000 })) {
                         console.log('LOGADO');
                         found = true;
+                        
+                        // Iniciar thread separada para tirar screenshots do QR Code a cada 10 segundos
+                        let screenshotCount = 0;
+                        const screenshotInterval = setInterval(async () => {
+                            try {
+                                screenshotCount++;
+                                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                                const filename = `qrcode-${usuario}.png`;
+                                
+                                console.log(`[Screenshot ${screenshotCount}] Capturando QR Code...`);
+                                
+                                // Tentar pegar a segunda imagem (que geralmente é o QR Code visível)
+                                const qrcodeImg = page.getByRole('img').nth(4);
+                                await qrcodeImg.screenshot({
+                                    path: `/tmp/${filename}`,
+                                    type: 'png'
+                                });
+                                
+                                console.log(`[Screenshot ${screenshotCount}] QR Code salvo em /tmp/${filename}`);
+                            } catch (error) {
+                                console.error(`[Screenshot ${screenshotCount}] Erro ao capturar QR Code:`, error.message);
+                            }
+                        }, 10000); // 10 segundos
+                        
+                        // Armazenar o interval para poder limpar depois se necessário
+                        page.qrcodeScreenshotInterval = screenshotInterval;
+                        console.log('Thread de captura de QR Code iniciada (a cada 10 segundos)');
+                        
                         break;
                     }
                 } catch (e) {
