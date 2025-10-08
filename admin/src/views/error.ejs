@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Erro - PagBank Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="error-page">
+  <div class="error-container">
+    <div class="error-box">
+      <h1>❌ Erro</h1>
+      <p class="error-message"><%= message %></p>
+      
+      <% if (error && error.stack) { %>
+        <details class="error-details">
+          <summary>Detalhes técnicos</summary>
+          <pre><%= error.stack %></pre>
+        </details>
+      <% } %>
+      
+      <a href="/dashboard" class="btn btn-primary">Voltar ao Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>

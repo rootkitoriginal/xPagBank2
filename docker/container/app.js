@@ -117,7 +117,7 @@ app.get('/', async (req, res) => {
 
         // Lançar o navegador com args anti-detecção
         const browser = await chromium.launch({
-            headless: true,
+            headless: false,
             args: []
         });
 
@@ -127,7 +127,8 @@ app.get('/', async (req, res) => {
         // Criar contexto com configurações completas do Brasil
         // Array de user agents aleatórios do Windows
         const windowsUserAgents = [
-            'Mozilla/5.0 (PARA CONTINUAR_CLIQUE EM; CASA x86_64) AppleWebKit/537.36 (KHTML, like Gecko) SIM/141.0.0.0 Safari/537.36'
+            //'Mozilla/5.0 (PARA CONTINUAR_CLIQUE EM; CASA x86_64) AppleWebKit/537.36 (KHTML, like Gecko) SIM/141.0.0.0 Safari/537.36'
+            'Mozilla/5.0 (xxxxxxxxxxx; CASA x86_64) AppleWebKit/537.36 (KHTML, like Gecko) xxxxx/141.2.3.1 Safari/537.36'
         ];
         
         // Selecionar user agent aleatório

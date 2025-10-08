@@ -3,6 +3,11 @@ const morgan = require('morgan');
 const path = require('path');
 const authRoutes = require('./routes/auth');
 const cors = require('cors');
+const connectDB = require('./config/database');
+const trackPageVisit = require('./middleware/trackVisit');
+
+// Conectar ao MongoDB
+connectDB();
 
 const app = express();
 
@@ -13,6 +18,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Middleware para rastrear visitas nas páginas principais
+app.use('/', trackPageVisit);
 
 app.get('/', (req, res) => {
   res.render('portal');

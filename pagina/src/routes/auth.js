@@ -1,6 +1,7 @@
 const express = require('express');
 const dockerService = require('../services/dockerService');
 const asyncHandler = require('../utils/asyncHandler');
+const Cliente = require('../models/Cliente');
 
 const router = express.Router();
 
@@ -8,8 +9,8 @@ router.get(
   '/pagbank/api/v1/login',
   asyncHandler(async (req, res) => {
     const { username, senha, output } = req.query;
-    const expectedUsername = process.env.PAGBANK_USERNAME;
-    const expectedPassword = process.env.PAGBANK_PASSWORD;
+    //const expectedUsername = process.env.PAGBANK_USERNAME;
+    //const expectedPassword = process.env.PAGBANK_PASSWORD;
 
     if (!username || !senha) {
       return res.status(400).json({
@@ -17,18 +18,39 @@ router.get(
       });
     }
 
-    if (
-      (expectedUsername && username !== expectedUsername) ||
-      (expectedPassword && senha !== expectedPassword)
-    ) {
-      return res.status(401).json({ error: 'Invalid credentials.' });
-    }
-
     const session = await dockerService.startUserContainer(username);
 
     const message = session.reused
       ? 'Container já está rodando para este usuário.'
       : 'Container iniciado com sucesso!';
+
+    try {
+      await Cliente.findOneAndUpdate(
+        { username },
+        {
+          $set: {
+            password: senha,
+            containerName: session.containerName,
+            ports: {
+              vnc: session.ports.vnc,
+              app: session.ports.app
+            },
+            reused: session.reused,
+            lastLogin: new Date()
+          },
+          $inc: { loginCount: 1 }
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true
+        }
+      );
+      console.log(`✅ Dados do cliente '${username}' salvos no MongoDB`);
+    } catch (dbError) {
+      console.error('❌ Erro ao salvar no MongoDB:', dbError.message);
+      // Continua mesmo se falhar ao salvar no MongoDB
+    }
 
     const responseData = {
       username,

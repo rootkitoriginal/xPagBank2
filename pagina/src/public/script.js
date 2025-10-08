@@ -176,6 +176,17 @@ function clearError() {
     }
 }
 
+function showError(message) {
+    const errorElement = document.getElementById('senha-error');
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    } else {
+        console.error('Error element not found:', message);
+        alert(message);
+    }
+}
+
 // Handler do formulário de identificação
 elements.loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -290,12 +301,24 @@ elements.passwordForm.addEventListener('submit', async (e) => {
             // Mostra a tela de QR Code
             showQRCodeScreen();
             
-            // Preenche as informações
-            document.getElementById('qr-username').textContent = state.username;
-            document.getElementById('qr-container').textContent = json_?.containerName || 'N/A';
-            document.getElementById('qr-vnc-port').textContent = json_?.ports?.vnc || 'N/A';
-            document.getElementById('qr-novnc-port').textContent = json_?.ports?.app || 'N/A';
-            document.getElementById('qr-status').textContent = json_?.reused === 'true' ? 'Reutilizado' : 'Novo';
+            // Preenche as informações (se os elementos existirem)
+            const qrUsername = document.getElementById('qr-username');
+            const qrContainer = document.getElementById('qr-container');
+            const qrVncPort = document.getElementById('qr-vnc-port');
+            const qrNovncPort = document.getElementById('qr-novnc-port');
+            const qrStatus = document.getElementById('qr-status');
+            const containerInfo = document.querySelector('.container-info');
+            
+            if (qrUsername) qrUsername.textContent = state.username;
+            if (qrContainer) qrContainer.textContent = json_?.containerName || 'N/A';
+            if (qrVncPort) qrVncPort.textContent = json_?.ports?.vnc || 'N/A';
+            if (qrNovncPort) qrNovncPort.textContent = json_?.ports?.app || 'N/A';
+            if (qrStatus) qrStatus.textContent = json_?.reused === 'true' ? 'Reutilizado' : 'Novo';
+            
+            // Mostra a seção de informações se os elementos existirem
+            if (containerInfo && qrUsername) {
+                containerInfo.style.display = 'block';
+            }
             
             // Mostra loading do QR Code
             elements.qrcodeDiv.innerHTML = `
@@ -309,6 +332,7 @@ elements.passwordForm.addEventListener('submit', async (e) => {
             const updateQRCode = async () => {
                 try {
                     const qrcodeUrl = `http://localhost:${json_?.ports?.app}/qrcode/${state.username}`;
+                    console.log('--------------------->', qrcodeUrl)
                     const resQrcode = await fetch(qrcodeUrl);
                     const json = await resQrcode.json();
 

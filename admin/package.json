@@ -1,0 +1,27 @@
+{
+  "name": "pagbank-admin",
+  "version": "1.0.0",
+  "description": "PagBank Admin Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "create-admin": "node scripts/createAdmin.js"
+  },
+  "keywords": ["admin", "dashboard"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "bcryptjs": "^2.4.3",
+    "mongoose": "^7.5.0",
+    "ejs": "^3.1.9",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
