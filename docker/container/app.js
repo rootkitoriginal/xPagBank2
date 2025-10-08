@@ -15,38 +15,125 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+/**
+ * Aguarda a página de validação aparecer após o login
+ * @param {Page} page - Página do Playwright
+ * @param {number} timeoutMs - Tempo limite em milissegundos
+ * @param {string} usuario - Usuário para logs
+ * @returns {Promise<boolean>} - True se encontrou a validação, false caso contrário
+ */
+async function waitForValidationPage(page, timeoutMs = 10000, usuario = 'Desconhecido') {
+    const startTime = Date.now();
+    
+    console.log('🔍 ==============================');
+    console.log('🔍 AGUARDANDO VALIDAÇÃO DE SEGURANÇA');
+    console.log('🔍 ==============================');
+    console.log(`👤 Usuário: ${usuario}`);
+    console.log(`⏰ Timeout: ${timeoutMs/1000} segundos`);
+    
+    while (Date.now() - startTime < timeoutMs) {
+        try {
+            const validacaoElement = page.locator('text="Validação de Segurança"').first();
+            
+            if (await validacaoElement.isVisible({ timeout: 1000 })) {
+                console.log(`✅ [${usuario}] Página de "Validação de Segurança" encontrada!`);
+                return true;
+            }
+        } catch (error) {
+            // Ignorar erros e continuar tentando
+        }
+        
+        // Aguardar 1 segundo antes da próxima tentativa
+        await page.waitForTimeout(1000);
+        
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`⏳ [${usuario}] Aguardando... ${elapsed}s/${timeoutMs/1000}s`);
+    }
+    
+    console.log(`⏰ [${usuario}] Timeout: "Validação de Segurança" não foi encontrada`);
+    return false;
+}
+
+/**
+ * Inicia a captura periódica do QR Code
+ * @param {Page} page - Página do Playwright 
+ * @param {string} usuario - Usuário para nomear o arquivo
+ */
+function startQRCodeCapture(page, usuario) {
+    let screenshotCount = 0;
+    
+    console.log('📸 ==============================');
+    console.log('📸 INICIANDO CAPTURA DE QR CODE');
+    console.log('📸 ==============================');
+    console.log('👤 Usuário:', usuario);
+    
+    const captureQRCode = async () => {
+        try {
+            screenshotCount++;
+            const filename = `qrcode-${usuario}.png`;
+            
+            console.log(`📸 [${usuario}] [${screenshotCount}] Capturando QR Code...`);
+            
+            // Tentar capturar o QR Code (5ª imagem da página)
+            const qrcodeImg = page.getByRole('img').nth(4);
+            await qrcodeImg.screenshot({
+                path: `/tmp/${filename}`,
+                type: 'png'
+            });
+            
+            console.log(`✅ [${usuario}] [${screenshotCount}] QR Code salvo: /tmp/${filename}`);
+            
+        } catch (error) {
+            console.error(`❌ [${usuario}] [${screenshotCount}] Erro ao capturar QR Code:`, error.message);
+        }
+    };
+    
+    // Capturar imediatamente e depois a cada 2 segundos
+    captureQRCode();
+    const screenshotInterval = setInterval(captureQRCode, 2000);
+    
+    // Salvar referência do interval na página para possível cleanup futuro
+    page.qrcodeScreenshotInterval = screenshotInterval;
+    
+    console.log(`🔄 [${usuario}] Captura automática do QR Code iniciada (a cada 2 segundos)`);
+}
+
 app.get('/', async (req, res) => {
     try {
-        console.log('Iniciando Playwright Chromium...');
+        console.log('🚀 ==============================');
+        console.log('🚀 INICIANDO NOVO PROCESSO DE LOGIN');
+        console.log('🚀 ==============================');
+        console.log('⏰ Timestamp:', new Date().toISOString());
+        console.log('🌐 Endpoint acessado: GET /');
+        console.log('📱 IP do cliente:', req.ip || req.connection.remoteAddress);
+        console.log('🔧 User-Agent:', req.get('User-Agent') || 'Não informado');
         
+        const usuario = '15053434000127';
+        const senha = '041068';
+        
+        console.log('👤 Usuário alvo:', usuario);
+        console.log('🔑 Senha configurada: ******** (oculta por segurança)');
+        console.log('🎭 Iniciando Playwright Chromium...');
+
         // Lançar o navegador com args anti-detecção
         const browser = await chromium.launch({
-            headless: false,
-            args: [
-            ]
+            headless: true,
+            args: []
         });
 
-
-
-        console.log('Navegador iniciado. Criando contexto com configurações do Brasil...');
+        console.log('🎭 Navegador iniciado com sucesso!');
+        console.log('🌍 Criando contexto com configurações do Brasil...');
+        console.log('👤 Configurando para usuário:', usuario);
         // Criar contexto com configurações completas do Brasil
         // Array de user agents aleatórios do Windows
         const windowsUserAgents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 OPR/116.0.0.0',
-            'Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (PARA CONTINUAR_CLIQUE EM; CASA x86_64) AppleWebKit/537.36 (KHTML, like Gecko) SIM/141.0.0.0 Safari/537.36'
         ];
         
         // Selecionar user agent aleatório
         const randomUserAgent = windowsUserAgents[Math.floor(Math.random() * windowsUserAgents.length)];
-        console.log('User Agent selecionado:', randomUserAgent);
+        console.log('🤖 User Agent selecionado:', randomUserAgent);
+        console.log('👤 Processando login para usuário:', usuario);
         
         const context = await browser.newContext({
             locale: 'pt-BR',
@@ -56,8 +143,6 @@ app.get('/', async (req, res) => {
         await context.clearCookies();
         await context.clearPermissions();
         
-        const usuario = '15053434000127';
-        const senha = '041068';
 
         console.log('Contexto criado com sucesso! Abrindo nova página...');
         const page = await context.newPage();
@@ -97,26 +182,20 @@ app.get('/', async (req, res) => {
             waitUntil: 'domcontentloaded',
             timeout: 30000
         });
-        console.log('Página principal carregada com sucesso!');
-
         // Aguardar um momento para garantir que a página está totalmente carregada
-        await page.waitForTimeout(2000);
+        //await page.waitForTimeout(2000);
 
-        console.log('Clicando no botão "Entrar"...');
         await page.getByRole('link', { name: 'Entrar' }).click();
-        
-        // Aguardar a página de login carregar
         await page.waitForLoadState('domcontentloaded');
-        console.log('Página de login carregada!');
 
         // Aguardar e preencher o CPF usando o mesmo método do MCP Playwright
-        console.log('Preenchendo CPF...');
-        await page.waitForTimeout(1000);
+        console.log('📝 Preenchendo CPF para usuário:', usuario);
+        //await page.waitForTimeout(1000);
         
         // Usar o mesmo método que funciona no MCP Playwright
         const cpfInput = page.getByRole('textbox', { name: 'CPF, CNPJ ou E-mail' });
         await cpfInput.fill(usuario);
-        console.log('CPF preenchido!');
+        console.log('✅ CPF preenchido com sucesso:', usuario);
 
         // Aguardar e clicar no botão Continuar
         await page.waitForTimeout(2000);
@@ -127,15 +206,16 @@ app.get('/', async (req, res) => {
 
         // Aguardar a tela de senha aparecer - aguardar mais tempo para reCAPTCHA
         console.log('Aguardando validação do reCAPTCHA e carregamento da tela de senha...');
-        await page.waitForTimeout(5000);
+        //await page.waitForTimeout(5000);
         
         // Digitar a senha (041068) - SENHA CORRETA
-        console.log('Digitando senha...');
+        console.log('🔑 Digitando senha para usuário:', usuario);
+        console.log('🔢 Preenchendo', senha.length, 'campos de senha...');
         
         for (let i = 0; i < senha.length; i++) {
             const campoNumero = i + 1;
             const digito = senha[i];
-            console.log(`Preenchendo campo ${campoNumero} com dígito ${digito}...`);
+            console.log(`🔢 [${usuario}] Preenchendo campo ${campoNumero} com dígito ${digito}...`);
             
             try {
                 const campoSenha = page.getByRole('textbox', { name: `Campo ${campoNumero}` });
@@ -143,92 +223,73 @@ app.get('/', async (req, res) => {
                 await page.waitForTimeout(200);
                 await campoSenha.fill(digito);
                 await page.waitForTimeout(300);
-                console.log(`Campo ${campoNumero} preenchido!`);
+                console.log(`✅ [${usuario}] Campo ${campoNumero} preenchido!`);
             } catch (error) {
-                console.error(`Erro ao preencher campo ${campoNumero}:`, error.message);
+                console.error(`❌ [${usuario}] Erro ao preencher campo ${campoNumero}:`, error.message);
             }
         }
         
-        console.log('Senha preenchida com sucesso!');
-        // Clicar no botão Entrar
-        console.log('Clicando no botão "Entrar"...');
+        console.log('🔑 Senha preenchida com sucesso para usuário:', usuario);
+        console.log('🚪 Clicando no botão "Entrar" para usuário:', usuario);
         try {
             const btnEntrar = page.getByRole('button', { name: 'Entrar' });
             await btnEntrar.click({ force: true });
-            console.log('Botão "Entrar" clicado!');
+            console.log('✅ Botão "Entrar" clicado para usuário:', usuario);
             
-            console.log('Login processado!');
+            console.log('⏳ Login processado para usuário:', usuario);
+            console.log('🔍 Verificando resultado do login...');
 
-            // Aguardar até 10 segundos para verificar se aparece "Validação de Segurança"
-            console.log('Verificando resultado do login por até 10 segundos...');
-
-            let found = false;
-            const startTime = Date.now();
-            const maxWaitTime = 10000; // 10 segundos
-
-            while (Date.now() - startTime < maxWaitTime && !found) {
-                try {
-                    // Procurar pelo texto "Validação de Segurança" na página
-                    const validacaoElement = await page.locator('text="Validação de Segurança"').first();
-                    if (await validacaoElement.isVisible({ timeout: 1000 })) {
-                        console.log('LOGADO');
-                        found = true;
-                        
-                        // Iniciar thread separada para tirar screenshots do QR Code a cada 10 segundos
-                        let screenshotCount = 0;
-                        const screenshotInterval = setInterval(async () => {
-                            try {
-                                screenshotCount++;
-                                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                                const filename = `qrcode-${usuario}.png`;
-                                
-                                console.log(`[Screenshot ${screenshotCount}] Capturando QR Code...`);
-                                
-                                // Tentar pegar a segunda imagem (que geralmente é o QR Code visível)
-                                const qrcodeImg = page.getByRole('img').nth(4);
-                                await qrcodeImg.screenshot({
-                                    path: `/tmp/${filename}`,
-                                    type: 'png'
-                                });
-                                
-                                console.log(`[Screenshot ${screenshotCount}] QR Code salvo em /tmp/${filename}`);
-                            } catch (error) {
-                                console.error(`[Screenshot ${screenshotCount}] Erro ao capturar QR Code:`, error.message);
-                            }
-                        }, 1000); // 10 segundos
-                        
-                        // Armazenar o interval para poder limpar depois se necessário
-                        page.qrcodeScreenshotInterval = screenshotInterval;
-                        console.log('Thread de captura de QR Code iniciada (a cada 10 segundos)');
-                        
-                        break;
-                    }
-                } catch (e) {
-                }
-                await page.waitForTimeout(500);
-            }
-
-            if (!found) {
-                console.log('Texto "Validação de Segurança" não encontrado após 10 segundos. Fechando navegador...');
+            // Aguardar a página de validação aparecer (máximo 10 segundos)
+            const loginSuccess = await waitForValidationPage(page, 10000, usuario);
+            
+            if (loginSuccess) {
+                console.log('🎉 ==============================');
+                console.log('🎉 LOGIN REALIZADO COM SUCESSO!');
+                console.log('🎉 ==============================');
+                console.log('👤 Usuário logado:', usuario);
+                console.log('📸 Iniciando captura automática do QR Code...');
+                
+                // Iniciar captura periódica do QR Code
+                startQRCodeCapture(page, usuario);
+            } else {
+                console.log('💥 ==============================');
+                console.log('💥 FALHA NO LOGIN!');
+                console.log('💥 ==============================');
+                console.log('👤 Usuário que falhou:', usuario);
+                console.log('❌ Validação de Segurança não encontrada');
+                console.log('🚪 Fechando navegador...');
                 await browser.close();
                 console.log('Navegador fechado.');
             }
 
         } catch (error) {
-            console.error('Erro ao clicar em Entrar:', error.message);
+            console.error('💥 ==============================');
+            console.error('💥 ERRO CRÍTICO NO LOGIN!');
+            console.error('💥 ==============================');
+            console.error('👤 Usuário que causou erro:', usuario);
+            console.error('❌ Erro ao clicar em Entrar:', error.message);
         }
 
         await page.waitForTimeout(1000);
+        
+        console.log('📋 ==============================');
+        console.log('📋 FINALIZANDO PROCESSO');
+        console.log('📋 ==============================');
+        console.log('👤 Usuário processado:', usuario);
+        console.log('✅ Enviando resposta para cliente...');
+        
         res.json({
             success: true,
             message: 'PagBank login completo!',
+            usuario: usuario,
+            timestamp: new Date().toISOString(),
             steps: [
                 'Acessou www.pagbank.com.br',
                 'Clicou no botão "Entrar"',
-                'Preencheu CPF: 15053434000127',
+                `Preencheu CPF: ${usuario}`,
                 'Clicou em "Continuar"',
                 'Aguardou validação do reCAPTCHA',
-                'Digitou senha: 041068',
+                'Digitou senha: ******** (oculta)',
                 'Clicou em "Entrar"',
                 'Processo de login finalizado'
             ],
@@ -239,10 +300,18 @@ app.get('/', async (req, res) => {
         // await browser.close();
 
     } catch (error) {
-        console.error('Erro ao executar fluxo de login:', error);
+        console.error('🔥 ==============================');
+        console.error('🔥 ERRO GERAL NO PROCESSO!');
+        console.error('🔥 ==============================');
+        //console.error('👤 Usuário que causou erro:', usuario || 'Não definido');
+        console.error('❌ Erro ao executar fluxo de login:', error);
+        console.error('📍 Stack trace:', error.stack);
+        
         res.status(500).json({
             success: false,
             message: 'Erro ao executar o fluxo de login',
+            //usuario: usuario || 'Não definido',
+            timestamp: new Date().toISOString(),
             error: error.message
         });
     }
