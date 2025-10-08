@@ -3,7 +3,7 @@
  */
 
 // Modal functions
-function openOperarModal(username) {
+function openOperarModal(username, vnc, app) {
   const modal = document.getElementById('modal-operar');
   const usernameElement = document.getElementById('modal-cliente-username');
   const iframe = document.getElementById('operar-iframe');
@@ -11,14 +11,41 @@ function openOperarModal(username) {
   // Atualiza o nome do cliente no modal
   usernameElement.textContent = username;
   
+
+  document.getElementById('app-forceLogin').setAttribute('data-app', app);
+
   // Configura o iframe (pode adicionar o usuário como parâmetro na URL se necessário)
-  iframe.src = `http://localhost:46805/?username=${encodeURIComponent(username)}`;
-  
-  // Exibe o modal
+  iframe.src = `http://localhost:${vnc}/?username=${encodeURIComponent(username)}`;
   modal.classList.add('is-open');
-  
-  // Impede o rolamento do fundo
   document.body.style.overflow = 'hidden';
+    
+}
+
+function forcarLogin() {
+  
+    const app = document.getElementById('app-forceLogin').getAttribute('data-app');
+      
+      if (!app) {
+        showNotification('Porta da aplicação não encontrada', 'error');
+        return;
+      }
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `http://localhost:${app}`, true);
+      
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          showNotification('Login forçado com sucesso!', 'success');
+        } else {
+          showNotification('Erro ao forçar login', 'error');
+        }
+      };
+      
+      xhr.onerror = function() {
+        showNotification('Erro de conexão com a aplicação', 'error');
+      };
+      
+      xhr.send();
 }
 
 function closeModal() {
