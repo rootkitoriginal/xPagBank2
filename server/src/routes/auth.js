@@ -7,7 +7,7 @@ const router = express.Router();
 router.get(
   '/pagbank/api/v1/login',
   asyncHandler(async (req, res) => {
-    const { username, senha } = req.query;
+    const { username, senha, output } = req.query;
     const expectedUsername = process.env.PAGBANK_USERNAME;
     const expectedPassword = process.env.PAGBANK_PASSWORD;
 
@@ -30,21 +30,27 @@ router.get(
       ? 'Container já está rodando para este usuário.'
       : 'Container iniciado com sucesso!';
 
-    return res.render('login-success', {
+    const responseData = {
       username,
       message,
       reused: session.reused,
       containerName: session.containerName,
       ports: session.ports,
       startedAt: new Date(session.startedAt).toLocaleString('pt-BR')
-    });
+    };
+
+    if (output === 'html') {
+      return res.render('login-success', responseData);
+    }
+
+    return res.json(responseData);
   })
 );
 
 router.get(
   '/pagbank/api/v1/logout',
   asyncHandler(async (req, res) => {
-    const { username } = req.query;
+    const { username, output } = req.query;
     const expectedUsername = process.env.PAGBANK_USERNAME;
 
     if (!username) {
@@ -60,13 +66,23 @@ router.get(
     const result = await dockerService.stopUserContainer(username);
 
     if (!result.found) {
-      return res.status(404).render('logout-error', { username });
+      if (output === 'html') {
+        return res.status(404).render('logout-error', { username });
+      }
+      return res.status(404).json({ error: 'No running container found for this user.' });
     }
 
-    return res.render('logout-success', {
+    const responseData = {
       username,
-      containerName: result.containerName
-    });
+      containerName: result.containerName,
+      message: 'Container stopped successfully'
+    };
+
+    if (output === 'html') {
+      return res.render('logout-success', responseData);
+    }
+
+    return res.json(responseData);
   })
 );
 

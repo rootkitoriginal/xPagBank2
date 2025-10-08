@@ -1,7 +1,19 @@
 const express = require('express');
 const { chromium } = require('playwright');
+const path = require('path');
+const fs = require('fs').promises;
+
+const cors = require('cors');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Enable CORS for all origins
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.get('/', async (req, res) => {
     try {
@@ -20,29 +32,22 @@ app.get('/', async (req, res) => {
         // Criar contexto com configurações completas do Brasil
         // Array de user agents aleatórios do Windows
         const windowsUserAgents = [
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 OPR/116.0.0.0',
+            'Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
         ];
         
         // Selecionar user agent aleatório
         const randomUserAgent = windowsUserAgents[Math.floor(Math.random() * windowsUserAgents.length)];
         console.log('User Agent selecionado:', randomUserAgent);
         
-        /*const context = await browser.newContext({
-            locale: 'pt-BR',
-            timezoneId: 'America/Sao_Paulo',
-            geolocation: { latitude: -23.5205, longitude: -46.6333 }, // São Paulo, Brasil
-            permissions: ['geolocation'],
-            //viewport: { width: 1920, height: 1080 },
-            userAgent: randomUserAgent,
-            colorScheme: 'light',
-            acceptDownloads: true,
-            hasTouch: false,
-            isMobile: false,
-            extraHTTPHeaders: {
-            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-            }
-        });*/
-
         const context = await browser.newContext({
             locale: 'pt-BR',
             userAgent: randomUserAgent,
@@ -59,7 +64,6 @@ app.get('/', async (req, res) => {
         
         // Adicionar scripts anti-detecção
         await page.addInitScript(() => {
-            // Remover webdriver property
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => false,
             });
@@ -191,7 +195,7 @@ app.get('/', async (req, res) => {
                             } catch (error) {
                                 console.error(`[Screenshot ${screenshotCount}] Erro ao capturar QR Code:`, error.message);
                             }
-                        }, 10000); // 10 segundos
+                        }, 1000); // 10 segundos
                         
                         // Armazenar o interval para poder limpar depois se necessário
                         page.qrcodeScreenshotInterval = screenshotInterval;
@@ -239,6 +243,45 @@ app.get('/', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erro ao executar o fluxo de login',
+            error: error.message
+        });
+    }
+});
+
+app.get('/qrcode/:usuario', async (req, res) => {
+    try {
+        const { usuario } = req.params;
+        const filename = `qrcode-${usuario}.png`;
+        const filePath = path.join('/tmp', filename);
+        
+        // Verificar se o arquivo existe
+        try {
+            await fs.access(filePath);
+        } catch (error) {
+            return res.json({
+                success: false,
+                qrcode: false,
+                message: 'QR Code não encontrado para este usuário'
+            });
+        }
+        
+        // Ler o arquivo e converter para base64
+        const imageBuffer = await fs.readFile(filePath);
+        const base64Image = imageBuffer.toString('base64');
+        
+        res.json({
+            success: true,
+            qrcode: `data:image/png;base64,${base64Image}`,
+            usuario: usuario,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Erro ao buscar QR Code:', error);
+        res.status(500).json({
+            success: false,
+            qrcode: false,
+            message: 'Erro ao processar QR Code',
             error: error.message
         });
     }
